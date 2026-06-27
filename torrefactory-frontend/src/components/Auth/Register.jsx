@@ -15,6 +15,7 @@ const Register = () => {
     password: '',
     confirmPassword: '',
     phoneNumber: '',
+    role: 'ROLE_CLIENT',
   });
   
   const [error, setError] = useState('');
@@ -101,12 +102,15 @@ const Register = () => {
 
     setLoading(true);
     try {
+      // Convertir ROLE_ADMIN en ADMIN pour le backend
+      const roleToSend = formData.role.replace('ROLE_', '');
       await register({
         fullName: formData.fullName,
         username: formData.username,
         email: formData.email,
         password: formData.password,
         phoneNumber: formData.phoneNumber,
+        roles: [roleToSend],
       });
       
       // Rediriger vers login après inscription
@@ -371,6 +375,39 @@ const Register = () => {
                       disabled={loading}
                     />
                   </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="role">Rôle *</label>
+                  <div className="input-with-icon">
+                    <span className="input-icon">👔</span>
+                    <select
+                      id="role"
+                      name="role"
+                      value={formData.role}
+                      onChange={handleChange}
+                      disabled={loading}
+                      style={{
+                        width: '100%',
+                        padding: '12px 12px 12px 40px',
+                        background: '#2a2218',
+                        border: '1px solid #3a3228',
+                        borderRadius: 8,
+                        color: '#f5f5f5',
+                        fontSize: 14,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <option value="ROLE_CLIENT">Client</option>
+                      <option value="ROLE_ADMIN">Administrateur</option>
+                      <option value="ROLE_PRODUCTION_MANAGER">Responsable Production</option>
+                      <option value="ROLE_WORKER">Ouvrier</option>
+                      <option value="ROLE_MAINTENANCE">Maintenance</option>
+                    </select>
+                  </div>
+                  <p style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+                    ⚠️ Sélectionnez "Administrateur" ou "Responsable Production" pour accéder au dashboard
+                  </p>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>

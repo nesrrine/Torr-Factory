@@ -20,13 +20,11 @@ public class MaintenanceController {
     private MaintenanceService maintenanceService;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'MAINTENANCE')")
     public ResponseEntity<List<MaintenanceDTO>> getAllMaintenances() {
         return ResponseEntity.ok(maintenanceService.getAllMaintenances());
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MAINTENANCE')")
     public ResponseEntity<MaintenanceDTO> getMaintenanceById(@PathVariable Long id) {
         return ResponseEntity.ok(maintenanceService.getMaintenanceById(id));
     }

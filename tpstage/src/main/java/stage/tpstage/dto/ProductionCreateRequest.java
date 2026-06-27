@@ -24,11 +24,8 @@ public class ProductionCreateRequest {
     @NotNull
     private LocalDate dateTorrefaction;
 
-    @Min(100)
-    @Max(250)
     private Integer temperatureCelsius;
 
-    @Min(1)
     private Integer dureeMinutes;
 
     @NotNull

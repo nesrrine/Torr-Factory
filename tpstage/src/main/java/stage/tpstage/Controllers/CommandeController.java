@@ -20,13 +20,11 @@ public class CommandeController {
     private CommandeService commandeService;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'PRODUCTION_MANAGER')")
     public ResponseEntity<List<CommandeDTO>> getAllCommandes() {
         return ResponseEntity.ok(commandeService.getAllCommandes());
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PRODUCTION_MANAGER', 'CLIENT')")
     public ResponseEntity<CommandeDTO> getCommandeById(@PathVariable Long id) {
         return ResponseEntity.ok(commandeService.getCommandeById(id));
     }

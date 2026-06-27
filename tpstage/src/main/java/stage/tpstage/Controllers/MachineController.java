@@ -20,13 +20,11 @@ public class MachineController {
     private MachineService machineService;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'PRODUCTION_MANAGER', 'MAINTENANCE')")
     public ResponseEntity<List<MachineDTO>> getAllMachines() {
         return ResponseEntity.ok(machineService.getAllMachines());
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PRODUCTION_MANAGER', 'MAINTENANCE')")
     public ResponseEntity<MachineDTO> getMachineById(@PathVariable Long id) {
         return ResponseEntity.ok(machineService.getMachineById(id));
     }

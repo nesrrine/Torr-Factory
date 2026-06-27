@@ -20,13 +20,11 @@ public class ProductionController {
     private ProductionService productionService;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'PRODUCTION_MANAGER', 'WORKER')")
     public ResponseEntity<List<ProductionDTO>> getAllProductions() {
         return ResponseEntity.ok(productionService.getAllProductions());
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PRODUCTION_MANAGER', 'WORKER')")
     public ResponseEntity<ProductionDTO> getProductionById(@PathVariable Long id) {
         return ResponseEntity.ok(productionService.getProductionById(id));
     }

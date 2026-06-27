@@ -34,8 +34,8 @@ const authService = {
         email: signupData.email?.trim(),
         password: signupData.password,
         fullName: signupData.fullName?.trim(),
-        phoneNumber: signupData.phoneNumber || null
-        // ❌ IMPORTANT: remove roles
+        phoneNumber: signupData.phoneNumber || null,
+        roles: signupData.roles || []
       });
 
       return response.data;
