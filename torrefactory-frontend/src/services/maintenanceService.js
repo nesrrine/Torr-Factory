@@ -49,3 +49,17 @@ export const getMaintenancesByMachine = async (machineId) => {
     throw error;
   }
 };
+
+/**
+ * Récupère la liste de toutes les machines
+ * Vous pouvez adapter l'endpoint selon votre API
+ */
+export const getAllMachines = async () => {
+  try {
+    const response = await api.get('/machines');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching machines:', error);
+    throw error;
+  }
+};

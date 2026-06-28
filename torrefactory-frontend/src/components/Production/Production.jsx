@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { getAllProductions, createProduction, updateProductionStatus } from '../../services/productionService';
 import { getAllMachines } from '../../services/machineService';
 import lotService from '../../services/lotService';
-import Sidebar from '../Common/Navbar';
+import Layout from '../Common/Layout';
 
 const Production = () => {
   const { user } = useAuth();
@@ -30,24 +30,25 @@ const Production = () => {
     fetchAll();
   }, []);
 
-const fetchAll = async () => {
-  try {
-    setLoading(true);
-    const [productionsData, machinesData, lotsData] = await Promise.all([
-      getAllProductions(),
-      getAllMachines(),
-      lotService.getAllLots(), // ← avec lotService.
-    ]);
-    setProductions(productionsData);
-    setMachines(machinesData);
-    setLots(lotsData);
-    setError(null);
-  } catch (err) {
-    setError('Impossible de charger les données');
-  } finally {
-    setLoading(false);
-  }
-};
+  const fetchAll = async () => {
+    try {
+      setLoading(true);
+      const [productionsData, machinesData, lotsData] = await Promise.all([
+        getAllProductions(),
+        getAllMachines(),
+        lotService.getAllLots(),
+      ]);
+      setProductions(productionsData);
+      setMachines(machinesData);
+      setLots(lotsData);
+      setError(null);
+    } catch (err) {
+      setError('Impossible de charger les données');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const canCreate = () => {
     if (!user?.roles) return false;
     return user.roles.some(role =>
@@ -148,129 +149,126 @@ const fetchAll = async () => {
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #1a1410 0%, #2a2218 100%)',
-      display: 'flex',
-    }}>
-      <Sidebar />
-      <div style={{ flex: 1, padding: '40px', overflow: 'auto' }}>
-        <div style={{ maxWidth: 1400, margin: '0 auto' }}>
+    <Layout>  {/* ✅ remplace le div wrapper + <Sidebar /> */}
+      <div style={{ maxWidth: 1400, margin: '0 auto' }}>
 
-          {/* Header */}
-          <div style={{
-            display: 'flex', justifyContent: 'space-between',
-            alignItems: 'center', marginBottom: '30px',
-          }}>
-            <h1 style={{ color: '#d4a574', fontSize: '32px', fontWeight: 'bold', margin: 0 }}>
-              Gestion de la Production
-            </h1>
-            {canCreate() && (
-              <button onClick={handleCreate} style={{
-                padding: '12px 24px', background: '#d4a574', color: '#1a1410',
-                border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer',
-              }}>
-                + Nouvelle Production
-              </button>
-            )}
-          </div>
-
-          {error && (
-            <div style={{
-              background: '#f44336', color: 'white',
-              padding: '12px 20px', borderRadius: 8, marginBottom: '20px',
+        {/* Header */}
+        <div style={{
+          display: 'flex', justifyContent: 'space-between',
+          alignItems: 'center', marginBottom: '30px',
+        }}>
+          <h1 style={{ color: '#d4a574', fontSize: '32px', fontWeight: 'bold', margin: 0 }}>
+            Gestion de la Production
+          </h1>
+          {canCreate() && (
+            <button onClick={handleCreate} style={{
+              padding: '12px 24px', background: '#d4a574', color: '#1a1410',
+              border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer',
             }}>
-              {error}
+              + Nouvelle Production
+            </button>
+          )}
+        </div>
+
+        {error && (
+          <div style={{
+            background: '#f44336', color: 'white',
+            padding: '12px 20px', borderRadius: 8, marginBottom: '20px',
+          }}>
+            {error}
+          </div>
+        )}
+
+        {/* Filtre */}
+        <div style={{
+          background: 'rgba(255,255,255,0.05)', borderRadius: 12,
+          padding: '20px', marginBottom: '20px',
+        }}>
+          <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+            <label style={{ color: '#d4a574', fontSize: 14 }}>Filtrer par statut:</label>
+            <select
+              value={filterStatut}
+              onChange={(e) => setFilterStatut(e.target.value)}
+              style={{
+                padding: '8px 12px', background: '#2a2218', color: '#d4a574',
+                border: '1px solid #d4a574', borderRadius: 6, fontSize: 14,
+              }}
+            >
+              <option value="">Tous</option>
+              <option value="EN_COURS">En cours</option>
+              <option value="TERMINEE">Terminée</option>
+              <option value="ANNULEE">Annulée</option>
+              <option value="EN_PAUSE">En pause</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Tableau */}
+        <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: '20px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th style={thStyle}>ID</th>
+                <th style={thStyle}>Lot</th>
+                <th style={thStyle}>Machine</th>
+                <th style={thStyle}>Quantité</th>
+                <th style={thStyle}>Température</th>
+                <th style={thStyle}>Durée</th>
+                <th style={thStyle}>Date Torréfaction</th>
+                <th style={thStyle}>Statut</th>
+                {canUpdateStatus() && <th style={thStyle}>Actions</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredProductions.map((production) => (
+                <tr key={production.id}>
+                  <td style={tdStyle}>{production.id}</td>
+                  <td style={tdStyle}>{production.lotNumero || production.lotId}</td>
+                  <td style={tdStyle}>{production.machineNom || production.machineId}</td>
+                  <td style={tdStyle}>{production.quantiteTorrefieeKg} kg</td>
+                  <td style={tdStyle}>{production.temperatureCelsius}°C</td>
+                  <td style={tdStyle}>{production.dureeMinutes} min</td>
+                  <td style={tdStyle}>{production.dateTorrefaction}</td>
+                  <td style={{ padding: '12px', borderBottom: '1px solid rgba(212,165,116,0.1)' }}>
+                    <span style={{
+                      background: getStatutColor(production.statut),
+                      color: 'white', padding: '4px 12px',
+                      borderRadius: 12, fontSize: 12, fontWeight: 600,
+                    }}>
+                      {production.statut}
+                    </span>
+                  </td>
+                  {canUpdateStatus() && (
+                    <td style={{ padding: '12px', borderBottom: '1px solid rgba(212,165,116,0.1)' }}>
+                      <select
+                        value={production.statut}
+                        onChange={(e) => handleStatusChange(production.id, e.target.value)}
+                        style={{
+                          padding: '6px 10px', background: '#2a2218', color: '#d4a574',
+                          border: '1px solid #d4a574', borderRadius: 4, fontSize: 12,
+                        }}
+                      >
+                        <option value="EN_COURS">En cours</option>
+                        <option value="TERMINEE">Terminée</option>
+                        <option value="ANNULEE">Annulée</option>
+                        <option value="EN_PAUSE">En pause</option>
+                      </select>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {filteredProductions.length === 0 && (
+            <div style={{ textAlign: 'center', color: '#b0b0b0', padding: '40px' }}>
+              Aucune production trouvée
             </div>
           )}
-
-          {/* Filtre */}
-          <div style={{
-            background: 'rgba(255,255,255,0.05)', borderRadius: 12,
-            padding: '20px', marginBottom: '20px',
-          }}>
-            <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-              <label style={{ color: '#d4a574', fontSize: 14 }}>Filtrer par statut:</label>
-              <select value={filterStatut} onChange={(e) => setFilterStatut(e.target.value)}
-                style={{
-                  padding: '8px 12px', background: '#2a2218', color: '#d4a574',
-                  border: '1px solid #d4a574', borderRadius: 6, fontSize: 14,
-                }}>
-                <option value="">Tous</option>
-                <option value="EN_COURS">En cours</option>
-                <option value="TERMINEE">Terminée</option>
-                <option value="ANNULEE">Annulée</option>
-                <option value="EN_PAUSE">En pause</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Tableau */}
-          <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: '20px' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr>
-                  <th style={thStyle}>ID</th>
-                  <th style={thStyle}>Lot</th>
-                  <th style={thStyle}>Machine</th>
-                  <th style={thStyle}>Quantité</th>
-                  <th style={thStyle}>Température</th>
-                  <th style={thStyle}>Durée</th>
-                  <th style={thStyle}>Date Torréfaction</th>
-                  <th style={thStyle}>Statut</th>
-                  {canUpdateStatus() && <th style={thStyle}>Actions</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredProductions.map((production) => (
-                  <tr key={production.id}>
-                    <td style={tdStyle}>{production.id}</td>
-                    <td style={tdStyle}>{production.lotNumero || production.lotId}</td>
-                    <td style={tdStyle}>{production.machineNom || production.machineId}</td>
-                    <td style={tdStyle}>{production.quantiteTorrefieeKg} kg</td>
-                    <td style={tdStyle}>{production.temperatureCelsius}°C</td>
-                    <td style={tdStyle}>{production.dureeMinutes} min</td>
-                    <td style={tdStyle}>{production.dateTorrefaction}</td>
-                    <td style={{ padding: '12px', borderBottom: '1px solid rgba(212,165,116,0.1)' }}>
-                      <span style={{
-                        background: getStatutColor(production.statut),
-                        color: 'white', padding: '4px 12px',
-                        borderRadius: 12, fontSize: 12, fontWeight: 600,
-                      }}>
-                        {production.statut}
-                      </span>
-                    </td>
-                    {canUpdateStatus() && (
-                      <td style={{ padding: '12px', borderBottom: '1px solid rgba(212,165,116,0.1)' }}>
-                        <select
-                          value={production.statut}
-                          onChange={(e) => handleStatusChange(production.id, e.target.value)}
-                          style={{
-                            padding: '6px 10px', background: '#2a2218', color: '#d4a574',
-                            border: '1px solid #d4a574', borderRadius: 4, fontSize: 12,
-                          }}
-                        >
-                          <option value="EN_COURS">En cours</option>
-                          <option value="TERMINEE">Terminée</option>
-                          <option value="ANNULEE">Annulée</option>
-                          <option value="EN_PAUSE">En pause</option>
-                        </select>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {filteredProductions.length === 0 && (
-              <div style={{ textAlign: 'center', color: '#b0b0b0', padding: '40px' }}>
-                Aucune production trouvée
-              </div>
-            )}
-          </div>
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Modal — reste en dehors du maxWidth div mais dans Layout */}
       {showModal && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -286,7 +284,6 @@ const fetchAll = async () => {
             </h2>
             <form onSubmit={handleSubmit}>
 
-              {/* Lot — DROPDOWN */}
               <div style={{ marginBottom: '15px' }}>
                 <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px' }}>
                   Lot de Café
@@ -294,8 +291,7 @@ const fetchAll = async () => {
                 <select
                   value={formData.lotCafeId}
                   onChange={(e) => setFormData({...formData, lotCafeId: e.target.value})}
-                  required
-                  style={inputStyle}
+                  required style={inputStyle}
                 >
                   <option value="">-- Choisir un lot --</option>
                   {lots.map(lot => (
@@ -306,7 +302,6 @@ const fetchAll = async () => {
                 </select>
               </div>
 
-              {/* Machine — DROPDOWN */}
               <div style={{ marginBottom: '15px' }}>
                 <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px' }}>
                   Machine
@@ -314,8 +309,7 @@ const fetchAll = async () => {
                 <select
                   value={formData.machineId}
                   onChange={(e) => setFormData({...formData, machineId: e.target.value})}
-                  required
-                  style={inputStyle}
+                  required style={inputStyle}
                 >
                   <option value="">-- Choisir une machine --</option>
                   {machines
@@ -329,73 +323,56 @@ const fetchAll = async () => {
                 </select>
               </div>
 
-              {/* Date Torréfaction */}
               <div style={{ marginBottom: '15px' }}>
                 <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px' }}>
                   Date Torréfaction
                 </label>
-                <input
-                  type="date"
-                  value={formData.dateTorrefaction}
+                <input type="date" value={formData.dateTorrefaction}
                   onChange={(e) => setFormData({...formData, dateTorrefaction: e.target.value})}
-                  required
-                  style={inputStyle}
+                  required style={inputStyle}
                 />
               </div>
 
-              {/* Température */}
               <div style={{ marginBottom: '15px' }}>
                 <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px' }}>
                   Température (°C) — min: 100, max: 250
                 </label>
-                <input
-                  type="number"
-                  min="100" max="250"
+                <input type="number" min="100" max="250"
                   value={formData.temperatureCelsius}
                   onChange={(e) => setFormData({...formData, temperatureCelsius: parseInt(e.target.value)})}
-                  required
-                  style={inputStyle}
+                  required style={inputStyle}
                 />
               </div>
 
-              {/* Durée */}
               <div style={{ marginBottom: '15px' }}>
                 <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px' }}>
                   Durée (minutes)
                 </label>
-                <input
-                  type="number" min="1"
+                <input type="number" min="1"
                   value={formData.dureeMinutes}
                   onChange={(e) => setFormData({...formData, dureeMinutes: parseInt(e.target.value)})}
-                  required
-                  style={inputStyle}
+                  required style={inputStyle}
                 />
               </div>
 
-              {/* Quantité */}
               <div style={{ marginBottom: '15px' }}>
                 <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px' }}>
                   Quantité Torréfiée (kg)
                 </label>
-                <input
-                  type="number" min="0" step="0.1"
+                <input type="number" min="0" step="0.1"
                   value={formData.quantiteTorrefieeKg}
                   onChange={(e) => setFormData({...formData, quantiteTorrefieeKg: parseFloat(e.target.value)})}
-                  required
-                  style={inputStyle}
+                  required style={inputStyle}
                 />
               </div>
 
-              {/* Observations */}
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px' }}>
                   Observations
                 </label>
-                <textarea
-                  value={formData.observations}
+                <textarea value={formData.observations}
                   onChange={(e) => setFormData({...formData, observations: e.target.value})}
-                  rows={3}
-                  placeholder="Notes optionnelles..."
+                  rows={3} placeholder="Notes optionnelles..."
                   style={inputStyle}
                 />
               </div>
@@ -418,7 +395,7 @@ const fetchAll = async () => {
           </div>
         </div>
       )}
-    </div>
+    </Layout>
   );
 };
 

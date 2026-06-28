@@ -14,4 +14,6 @@ public interface ProduitRepository extends JpaRepository<Produit, Long> {
     Optional<Produit> findByReference(String reference);
     List<Produit> findByDisponible(Boolean disponible);
     List<Produit> findByStockDisponibleKgLessThan(Double stock);
+    Optional<Produit> findByNom(String nom); // ✅ nécessaire pour createRecetteFromDTO
+
 }

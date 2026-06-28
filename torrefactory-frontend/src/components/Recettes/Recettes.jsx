@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { getAllRecettes, createRecette, updateRecette, deleteRecette, getLignesByRecette, addLigneRecette, deleteLigneRecette } from '../../services/recetteService';
-import Sidebar from '../Common/Navbar';
-
+import Layout from '../Common/Layout';
+import { getAllProduits } from '../../services/produitService';
 const Recettes = () => {
   const { user } = useAuth();
   const [recettes, setRecettes] = useState([]);
@@ -13,6 +13,7 @@ const Recettes = () => {
   const [editingRecette, setEditingRecette] = useState(null);
   const [selectedRecette, setSelectedRecette] = useState(null);
   const [lignes, setLignes] = useState([]);
+  const [produits, setProduits] = useState([]);
 
   const [formData, setFormData] = useState({
     nom: '',
@@ -30,8 +31,17 @@ const Recettes = () => {
 
   useEffect(() => {
     fetchRecettes();
-  }, []);
+    fetchProduits();
 
+  }, []);
+const fetchProduits = async () => {
+  try {
+    const data = await getAllProduits();
+    setProduits(data);
+  } catch (err) {
+    console.error('Error fetching produits:', err);
+  }
+};
   const fetchRecettes = async () => {
     try {
       setLoading(true);
@@ -110,11 +120,14 @@ const Recettes = () => {
     e.preventDefault();
     
     try {
-      const payload = {
-        ...formData,
-        produit: formData.produitId ? { id: formData.produitId } : null,
-      };
-      
+const payload = {
+  nom: formData.nom,
+  description: formData.description,
+  quantiteTotale: Number(formData.quantiteTotale),
+  actif: formData.actif,
+  produitNom: produits.find(p => p.id == formData.produitId)?.nom || null,
+  // ✅ correspond exactement au RecetteDTO
+};  
       if (editingRecette) {
         await updateRecette(editingRecette.id, payload);
       } else {
@@ -181,22 +194,9 @@ const Recettes = () => {
     );
   }
 
-  return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #1a1410 0%, #2a2218 100%)',
-      display: 'flex',
-    }}>
-      <Sidebar />
-      <div style={{
-        flex: 1,
-        padding: '40px',
-        overflow: 'auto',
-      }}>
-        <div style={{
-          maxWidth: 1400,
-          margin: '0 auto',
-        }}>
+return (
+  <Layout>
+    <div style={{ maxWidth: 1400, margin: '0 auto' }}>
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
@@ -412,7 +412,6 @@ const Recettes = () => {
             )}
           </div>
         </div>
-      </div>
 
       {showModal && (
         <div style={{
@@ -501,24 +500,35 @@ const Recettes = () => {
                     }}
                   />
                 </div>
-                <div>
-                  <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px' }}>
-                    ID Produit
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.produitId}
-                    onChange={(e) => setFormData({...formData, produitId: e.target.value})}
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      background: '#1a1410',
-                      color: '#d4a574',
-                      border: '1px solid #d4a574',
-                      borderRadius: 6,
-                    }}
-                  />
-                </div>
+               <div>
+  <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px' }}>
+    Produit *
+  </label>
+
+  <select
+    value={formData.produitId}
+    onChange={(e) =>
+      setFormData({ ...formData, produitId: e.target.value })
+    }
+    required
+    style={{
+      width: '100%',
+      padding: '10px',
+      background: '#1a1410',
+      color: '#d4a574',
+      border: '1px solid #d4a574',
+      borderRadius: 6,
+    }}
+  >
+    <option value="">-- Sélectionner un produit --</option>
+
+{produits?.map((p) => (
+        <option key={p.id} value={p.id}>
+        {p.nom}
+      </option>
+    ))}
+  </select>
+</div>
               </div>
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px' }}>
@@ -806,7 +816,7 @@ const Recettes = () => {
           </div>
         </div>
       )}
-    </div>
+  </Layout>
   );
 };
 

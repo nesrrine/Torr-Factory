@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { getAllProfils, createProfil, updateProfil, deleteProfil } from '../../services/profilService';
-import Sidebar from '../Common/Navbar';
+import Layout from '../Common/Layout';
 
 const ProfilsTorréfaction = () => {
   const { user } = useAuth();
@@ -139,21 +139,9 @@ const ProfilsTorréfaction = () => {
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #1a1410 0%, #2a2218 100%)',
-      display: 'flex',
-    }}>
-      <Sidebar />
-      <div style={{
-        flex: 1,
-        padding: '40px',
-        overflow: 'auto',
-      }}>
-        <div style={{
-          maxWidth: 1400,
-          margin: '0 auto',
-        }}>
+
+  <Layout>
+    <div style={{ maxWidth: 1400, margin: '0 auto' }}>
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
@@ -390,7 +378,7 @@ const ProfilsTorréfaction = () => {
             )}
           </div>
         </div>
-      </div>
+     
 
       {showModal && (
         <div style={{
@@ -662,7 +650,7 @@ const ProfilsTorréfaction = () => {
           </div>
         </div>
       )}
-    </div>
+    </Layout>
   );
 };
 

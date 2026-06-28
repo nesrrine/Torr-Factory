@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { getAllProduits, createProduit, updateProduit, updateProduitStock, getProduitsStockFaible } from '../../services/produitService';
-import Sidebar from '../Common/Navbar';
+import Layout from '../Common/Layout';
 
 const Produits = () => {
   const { user } = useAuth();
@@ -142,94 +142,93 @@ const Produits = () => {
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1a1410 0%, #2a2218 100%)', display: 'flex' }}>
-      <Sidebar />
-      <div style={{ flex: 1, padding: '40px', overflow: 'auto' }}>
-        <div style={{ maxWidth: 1400, margin: '0 auto' }}>
+    <Layout>
+      <div style={{ maxWidth: 1400, margin: '0 auto' }}>
 
-          {/* Header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-            <h1 style={{ color: '#d4a574', fontSize: '32px', fontWeight: 'bold', margin: 0 }}>
-              Gestion des Produits
-            </h1>
-            {canEdit() && !isClient() && (
-              <button onClick={handleCreate} style={{
-                padding: '12px 24px', background: '#d4a574', color: '#1a1410',
-                border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer',
-              }}>
-                + Nouveau Produit
-              </button>
-            )}
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+          <h1 style={{ color: '#d4a574', fontSize: '32px', fontWeight: 'bold', margin: 0 }}>
+            Gestion des Produits
+          </h1>
+          {canEdit() && !isClient() && (
+            <button onClick={handleCreate} style={{
+              padding: '12px 24px', background: '#d4a574', color: '#1a1410',
+              border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer',
+            }}>
+              + Nouveau Produit
+            </button>
+          )}
+        </div>
+
+        {error && (
+          <div style={{ background: '#f44336', color: 'white', padding: '12px 20px', borderRadius: 8, marginBottom: '20px' }}>
+            {error}
           </div>
+        )}
 
-          {error && (
-            <div style={{ background: '#f44336', color: 'white', padding: '12px 20px', borderRadius: 8, marginBottom: '20px' }}>
-              {error}
+        {/* Filtre */}
+        <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: '20px', marginBottom: '20px' }}>
+          <label style={{ color: '#d4a574', fontSize: 14, cursor: 'pointer' }}>
+            <input type="checkbox" checked={filterLowStock}
+              onChange={(e) => setFilterLowStock(e.target.checked)}
+              style={{ marginRight: '8px' }} />
+            Afficher seulement le stock faible
+          </label>
+        </div>
+
+        {/* Tableau */}
+        <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: '20px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th style={thStyle}>Référence</th>
+                <th style={thStyle}>Nom</th>
+                <th style={thStyle}>Type Café</th>
+                <th style={thStyle}>Torréfaction</th>
+                <th style={thStyle}>Prix/kg</th>
+                <th style={thStyle}>Stock (kg)</th>
+                <th style={thStyle}>Stock Mini</th>
+                {canEdit() && !isClient() && <th style={thStyle}>Actions</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {produits.map((produit) => (
+                <tr key={produit.id}>
+                  <td style={tdStyle}>{produit.reference}</td>
+                  <td style={tdStyle}>{produit.nom}</td>
+                  <td style={tdStyle}>{produit.typeCafe}</td>
+                  <td style={tdStyle}>{produit.niveauTorrefaction}</td>
+                  <td style={tdStyle}>{produit.prixKg} DT/kg</td>
+                  <td style={{ padding: '12px', borderBottom: '1px solid rgba(212,165,116,0.1)' }}>
+                    <span style={{
+                      background: getStockColor(produit.stockDisponibleKg),
+                      color: 'white', padding: '4px 12px', borderRadius: 12, fontSize: 12, fontWeight: 600,
+                    }}>
+                      {produit.stockDisponibleKg} kg
+                    </span>
+                  </td>
+                  <td style={tdStyle}>{produit.stockMiniKg} kg</td>
+                  {canEdit() && !isClient() && (
+                    <td style={{ padding: '12px', borderBottom: '1px solid rgba(212,165,116,0.1)' }}>
+                      <button onClick={() => handleEdit(produit)} style={{
+                        padding: '6px 12px', background: '#2196F3', color: 'white',
+                        border: 'none', borderRadius: 4, fontSize: 12, cursor: 'pointer', marginRight: '8px',
+                      }}>Modifier</button>
+                      <button onClick={() => handleStockUpdate(produit)} style={{
+                        padding: '6px 12px', background: '#4CAF50', color: 'white',
+                        border: 'none', borderRadius: 4, fontSize: 12, cursor: 'pointer',
+                      }}>Stock</button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {produits.length === 0 && (
+            <div style={{ textAlign: 'center', color: '#b0b0b0', padding: '40px' }}>
+              Aucun produit trouvé
             </div>
           )}
-
-          {/* Filtre */}
-          <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: '20px', marginBottom: '20px' }}>
-            <label style={{ color: '#d4a574', fontSize: 14 }}>
-              <input type="checkbox" checked={filterLowStock}
-                onChange={(e) => setFilterLowStock(e.target.checked)}
-                style={{ marginRight: '8px' }} />
-              Afficher seulement le stock faible
-            </label>
-          </div>
-
-          {/* Tableau */}
-          <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: '20px' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr>
-                  <th style={thStyle}>Référence</th>
-                  <th style={thStyle}>Nom</th>
-                  <th style={thStyle}>Type Café</th>
-                  <th style={thStyle}>Torréfaction</th>
-                  <th style={thStyle}>Prix/kg</th>
-                  <th style={thStyle}>Stock (kg)</th>
-                  <th style={thStyle}>Stock Mini</th>
-                  {canEdit() && !isClient() && <th style={thStyle}>Actions</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {produits.map((produit) => (
-                  <tr key={produit.id}>
-                    <td style={tdStyle}>{produit.reference}</td>
-                    <td style={tdStyle}>{produit.nom}</td>
-                    <td style={tdStyle}>{produit.typeCafe}</td>
-                    <td style={tdStyle}>{produit.niveauTorrefaction}</td>
-                    <td style={tdStyle}>{produit.prixKg} DT/kg</td>
-                    <td style={{ padding: '12px', borderBottom: '1px solid rgba(212,165,116,0.1)' }}>
-                      <span style={{
-                        background: getStockColor(produit.stockDisponibleKg),
-                        color: 'white', padding: '4px 12px', borderRadius: 12, fontSize: 12, fontWeight: 600,
-                      }}>
-                        {produit.stockDisponibleKg} kg
-                      </span>
-                    </td>
-                    <td style={tdStyle}>{produit.stockMiniKg} kg</td>
-                    {canEdit() && !isClient() && (
-                      <td style={{ padding: '12px', borderBottom: '1px solid rgba(212,165,116,0.1)' }}>
-                        <button onClick={() => handleEdit(produit)} style={{
-                          padding: '6px 12px', background: '#2196F3', color: 'white',
-                          border: 'none', borderRadius: 4, fontSize: 12, cursor: 'pointer', marginRight: '8px',
-                        }}>Modifier</button>
-                        <button onClick={() => handleStockUpdate(produit)} style={{
-                          padding: '6px 12px', background: '#4CAF50', color: 'white',
-                          border: 'none', borderRadius: 4, fontSize: 12, cursor: 'pointer',
-                        }}>Stock</button>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {produits.length === 0 && (
-              <div style={{ textAlign: 'center', color: '#b0b0b0', padding: '40px' }}>Aucun produit trouvé</div>
-            )}
-          </div>
         </div>
       </div>
 
@@ -248,7 +247,6 @@ const Produits = () => {
             </h2>
             <form onSubmit={handleSubmit}>
 
-              {/* Référence */}
               <div style={{ marginBottom: '15px' }}>
                 <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px' }}>Référence</label>
                 <input type="text" value={formData.reference} required style={inputStyle}
@@ -256,7 +254,6 @@ const Produits = () => {
                   placeholder="ex: REF-001" />
               </div>
 
-              {/* Nom */}
               <div style={{ marginBottom: '15px' }}>
                 <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px' }}>Nom</label>
                 <input type="text" value={formData.nom} required style={inputStyle}
@@ -264,7 +261,6 @@ const Produits = () => {
                   placeholder="ex: Arabica Éthiopie" />
               </div>
 
-              {/* Description */}
               <div style={{ marginBottom: '15px' }}>
                 <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px' }}>Description</label>
                 <textarea value={formData.description} rows={2} style={inputStyle}
@@ -272,7 +268,6 @@ const Produits = () => {
                   placeholder="Description optionnelle..." />
               </div>
 
-              {/* Type Café */}
               <div style={{ marginBottom: '15px' }}>
                 <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px' }}>Type de Café</label>
                 <select value={formData.typeCafe} style={inputStyle}
@@ -283,7 +278,6 @@ const Produits = () => {
                 </select>
               </div>
 
-              {/* Niveau Torréfaction */}
               <div style={{ marginBottom: '15px' }}>
                 <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px' }}>Niveau de Torréfaction</label>
                 <select value={formData.niveauTorrefaction} style={inputStyle}
@@ -295,7 +289,6 @@ const Produits = () => {
                 </select>
               </div>
 
-              {/* Prix/kg */}
               <div style={{ marginBottom: '15px' }}>
                 <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px' }}>Prix (DT/kg)</label>
                 <input type="number" step="0.01" min="0" value={formData.prixKg} required style={inputStyle}
@@ -303,7 +296,6 @@ const Produits = () => {
                   placeholder="ex: 45.00" />
               </div>
 
-              {/* Stock disponible */}
               <div style={{ marginBottom: '15px' }}>
                 <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px' }}>Stock Disponible (kg)</label>
                 <input type="number" step="0.1" min="0" value={formData.stockDisponibleKg} required style={inputStyle}
@@ -311,7 +303,6 @@ const Produits = () => {
                   placeholder="ex: 100" />
               </div>
 
-              {/* Stock mini */}
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px' }}>Stock Minimum (kg)</label>
                 <input type="number" step="0.1" min="0" value={formData.stockMiniKg} style={inputStyle}
@@ -341,13 +332,17 @@ const Produits = () => {
           background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
         }}>
           <div style={{ background: '#2a2218', borderRadius: 12, padding: '30px', width: '100%', maxWidth: 400 }}>
-            <h2 style={{ color: '#d4a574', fontSize: '24px', marginBottom: '20px' }}>Mettre à jour le stock</h2>
+            <h2 style={{ color: '#d4a574', fontSize: '24px', marginBottom: '20px' }}>
+              Mettre à jour le stock
+            </h2>
             <p style={{ color: '#b0b0b0', marginBottom: '20px' }}>
               Produit: {stockProduit?.nom} (Stock actuel: {stockProduit?.stockDisponibleKg} kg)
             </p>
             <form onSubmit={handleStockSubmit}>
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px' }}>Nouvelle quantité (kg)</label>
+                <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px' }}>
+                  Nouvelle quantité (kg)
+                </label>
                 <input type="number" step="0.1" min="0" value={stockFormData.quantite} required style={inputStyle}
                   onChange={(e) => setStockFormData({...stockFormData, quantite: e.target.value})} />
               </div>
@@ -365,7 +360,7 @@ const Produits = () => {
           </div>
         </div>
       )}
-    </div>
+    </Layout>
   );
 };
 

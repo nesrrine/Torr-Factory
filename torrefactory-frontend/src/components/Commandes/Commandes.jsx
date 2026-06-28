@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { getAllCommandes, createCommande, updateCommandeStatus, getCommandesByClient } from '../../services/commandeService';
 import { getAllProduits } from '../../services/produitService';
-import Sidebar from '../Common/Navbar';
+import Layout from '../Common/Layout';
 
 const Commandes = () => {
   const { user } = useAuth();
@@ -63,7 +63,6 @@ const Commandes = () => {
     setShowModal(true);
   };
 
-  // Ajouter une ligne produit
   const addLigne = () => {
     setFormData({
       ...formData,
@@ -71,23 +70,20 @@ const Commandes = () => {
     });
   };
 
-  // Supprimer une ligne produit
   const removeLigne = (index) => {
-    if (formData.lignes.length === 1) return; // garder au moins 1
+    if (formData.lignes.length === 1) return;
     setFormData({
       ...formData,
       lignes: formData.lignes.filter((_, i) => i !== index),
     });
   };
 
-  // Modifier une ligne produit
   const updateLigne = (index, field, value) => {
     const newLignes = [...formData.lignes];
     newLignes[index] = { ...newLignes[index], [field]: value };
     setFormData({ ...formData, lignes: newLignes });
   };
 
-  // Calculer le total estimé
   const calculerTotal = () => {
     return formData.lignes.reduce((total, ligne) => {
       const produit = produits.find(p => p.id === Number(ligne.produitId));
@@ -157,107 +153,106 @@ const Commandes = () => {
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1a1410 0%, #2a2218 100%)', display: 'flex' }}>
-      <Sidebar />
-      <div style={{ flex: 1, padding: '40px', overflow: 'auto' }}>
-        <div style={{ maxWidth: 1400, margin: '0 auto' }}>
+    <Layout>  {/* ✅ remplace le div wrapper + Sidebar */}
+      <div style={{ maxWidth: 1400, margin: '0 auto' }}>
 
-          {/* Header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-            <h1 style={{ color: '#d4a574', fontSize: '32px', fontWeight: 'bold', margin: 0 }}>
-              Gestion des Commandes
-            </h1>
-            {canCreate() && (
-              <button onClick={handleCreate} style={{
-                padding: '12px 24px', background: '#d4a574', color: '#1a1410',
-                border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer',
-              }}>
-                + Nouvelle Commande
-              </button>
-            )}
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+          <h1 style={{ color: '#d4a574', fontSize: '32px', fontWeight: 'bold', margin: 0 }}>
+            Gestion des Commandes
+          </h1>
+          {canCreate() && (
+            <button onClick={handleCreate} style={{
+              padding: '12px 24px', background: '#d4a574', color: '#1a1410',
+              border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer',
+            }}>
+              + Nouvelle Commande
+            </button>
+          )}
+        </div>
+
+        {error && (
+          <div style={{ background: '#f44336', color: 'white', padding: '12px 20px', borderRadius: 8, marginBottom: '20px' }}>
+            {error}
           </div>
+        )}
 
-          {error && (
-            <div style={{ background: '#f44336', color: 'white', padding: '12px 20px', borderRadius: 8, marginBottom: '20px' }}>
-              {error}
+        {/* Filtre */}
+        <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: '20px', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+            <label style={{ color: '#d4a574', fontSize: 14 }}>Filtrer par statut:</label>
+            <select value={filterStatut} onChange={(e) => setFilterStatut(e.target.value)}
+              style={{ padding: '8px 12px', background: '#2a2218', color: '#d4a574', border: '1px solid #d4a574', borderRadius: 6, fontSize: 14 }}>
+              <option value="">Tous</option>
+              <option value="EN_ATTENTE">En attente</option>
+              <option value="CONFIRMEE">Confirmée</option>
+              <option value="EN_PREPARATION">En préparation</option>
+              <option value="PRETE">Prête</option>
+              <option value="LIVREE">Livrée</option>
+              <option value="ANNULEE">Annulée</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Tableau */}
+        <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: '20px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th style={thStyle}>ID</th>
+                <th style={thStyle}>Client</th>
+                <th style={thStyle}>Date Commande</th>
+                <th style={thStyle}>Date Livraison</th>
+                <th style={thStyle}>Montant Total</th>
+                <th style={thStyle}>Adresse</th>
+                <th style={thStyle}>Statut</th>
+                {canUpdateStatus() && <th style={thStyle}>Actions</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredCommandes.map((commande) => (
+                <tr key={commande.id}>
+                  <td style={tdStyle}>{commande.id}</td>
+                  <td style={tdStyle}>{commande.clientNom || commande.clientId}</td>
+                  <td style={tdStyle}>{commande.dateCommande}</td>
+                  <td style={tdStyle}>{commande.dateLivraisonPrevue || '-'}</td>
+                  <td style={tdStyle}>{commande.montantTotal} DT</td>
+                  <td style={tdStyle}>{commande.adresseLivraison || '-'}</td>
+                  <td style={{ padding: '12px', borderBottom: '1px solid rgba(212,165,116,0.1)' }}>
+                    <span style={{
+                      background: getStatutColor(commande.statut), color: 'white',
+                      padding: '4px 12px', borderRadius: 12, fontSize: 12, fontWeight: 600,
+                    }}>
+                      {commande.statut}
+                    </span>
+                  </td>
+                  {canUpdateStatus() && (
+                    <td style={{ padding: '12px', borderBottom: '1px solid rgba(212,165,116,0.1)' }}>
+                      <select value={commande.statut}
+                        onChange={(e) => handleStatusChange(commande.id, e.target.value)}
+                        style={{ padding: '6px 10px', background: '#2a2218', color: '#d4a574', border: '1px solid #d4a574', borderRadius: 4, fontSize: 12 }}>
+                        <option value="EN_ATTENTE">En attente</option>
+                        <option value="CONFIRMEE">Confirmée</option>
+                        <option value="EN_PREPARATION">En préparation</option>
+                        <option value="PRETE">Prête</option>
+                        <option value="LIVREE">Livrée</option>
+                        <option value="ANNULEE">Annulée</option>
+                      </select>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {filteredCommandes.length === 0 && (
+            <div style={{ textAlign: 'center', color: '#b0b0b0', padding: '40px' }}>
+              Aucune commande trouvée
             </div>
           )}
-
-          {/* Filtre */}
-          <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: '20px', marginBottom: '20px' }}>
-            <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-              <label style={{ color: '#d4a574', fontSize: 14 }}>Filtrer par statut:</label>
-              <select value={filterStatut} onChange={(e) => setFilterStatut(e.target.value)}
-                style={{ padding: '8px 12px', background: '#2a2218', color: '#d4a574', border: '1px solid #d4a574', borderRadius: 6, fontSize: 14 }}>
-                <option value="">Tous</option>
-                <option value="EN_ATTENTE">En attente</option>
-                <option value="CONFIRMEE">Confirmée</option>
-                <option value="EN_PREPARATION">En préparation</option>
-                <option value="PRETE">Prête</option>
-                <option value="LIVREE">Livrée</option>
-                <option value="ANNULEE">Annulée</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Tableau */}
-          <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: '20px' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr>
-                  <th style={thStyle}>ID</th>
-                  <th style={thStyle}>Client</th>
-                  <th style={thStyle}>Date Commande</th>
-                  <th style={thStyle}>Date Livraison</th>
-                  <th style={thStyle}>Montant Total</th>
-                  <th style={thStyle}>Adresse</th>
-                  <th style={thStyle}>Statut</th>
-                  {canUpdateStatus() && <th style={thStyle}>Actions</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredCommandes.map((commande) => (
-                  <tr key={commande.id}>
-                    <td style={tdStyle}>{commande.id}</td>
-                    <td style={tdStyle}>{commande.clientNom || commande.clientId}</td>
-                    <td style={tdStyle}>{commande.dateCommande}</td>
-                    <td style={tdStyle}>{commande.dateLivraisonPrevue || '-'}</td>
-                    <td style={tdStyle}>{commande.montantTotal} DT</td>
-                    <td style={tdStyle}>{commande.adresseLivraison || '-'}</td>
-                    <td style={{ padding: '12px', borderBottom: '1px solid rgba(212,165,116,0.1)' }}>
-                      <span style={{
-                        background: getStatutColor(commande.statut), color: 'white',
-                        padding: '4px 12px', borderRadius: 12, fontSize: 12, fontWeight: 600,
-                      }}>
-                        {commande.statut}
-                      </span>
-                    </td>
-                    {canUpdateStatus() && (
-                      <td style={{ padding: '12px', borderBottom: '1px solid rgba(212,165,116,0.1)' }}>
-                        <select value={commande.statut}
-                          onChange={(e) => handleStatusChange(commande.id, e.target.value)}
-                          style={{ padding: '6px 10px', background: '#2a2218', color: '#d4a574', border: '1px solid #d4a574', borderRadius: 4, fontSize: 12 }}>
-                          <option value="EN_ATTENTE">En attente</option>
-                          <option value="CONFIRMEE">Confirmée</option>
-                          <option value="EN_PREPARATION">En préparation</option>
-                          <option value="PRETE">Prête</option>
-                          <option value="LIVREE">Livrée</option>
-                          <option value="ANNULEE">Annulée</option>
-                        </select>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {filteredCommandes.length === 0 && (
-              <div style={{ textAlign: 'center', color: '#b0b0b0', padding: '40px' }}>Aucune commande trouvée</div>
-            )}
-          </div>
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Modal — reste dans Layout */}
       {showModal && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -270,7 +265,6 @@ const Commandes = () => {
             <h2 style={{ color: '#d4a574', fontSize: '24px', marginBottom: '20px' }}>Nouvelle Commande</h2>
             <form onSubmit={handleSubmit}>
 
-              {/* Client ID — seulement si ADMIN */}
               {!user?.roles?.includes('ROLE_CLIENT') && (
                 <div style={{ marginBottom: '15px' }}>
                   <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px' }}>ID Client</label>
@@ -280,7 +274,6 @@ const Commandes = () => {
                 </div>
               )}
 
-              {/* Date Livraison */}
               <div style={{ marginBottom: '15px' }}>
                 <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px' }}>Date Livraison Prévue</label>
                 <input type="date" value={formData.dateLivraisonPrevue} required style={inputStyle}
@@ -288,7 +281,6 @@ const Commandes = () => {
                   min={new Date().toISOString().split('T')[0]} />
               </div>
 
-              {/* Adresse */}
               <div style={{ marginBottom: '15px' }}>
                 <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px' }}>Adresse de Livraison</label>
                 <input type="text" value={formData.adresseLivraison} required style={inputStyle}
@@ -296,16 +288,13 @@ const Commandes = () => {
                   placeholder="ex: 12 Rue de Tunis, Sfax" />
               </div>
 
-              {/* Lignes de commande */}
               <div style={{ marginBottom: '15px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                   <label style={{ color: '#d4a574', fontWeight: 600 }}>Produits commandés</label>
                   <button type="button" onClick={addLigne} style={{
                     padding: '6px 14px', background: '#4CAF50', color: 'white',
                     border: 'none', borderRadius: 4, fontSize: 12, cursor: 'pointer',
-                  }}>
-                    + Ajouter produit
-                  </button>
+                  }}>+ Ajouter produit</button>
                 </div>
 
                 {formData.lignes.map((ligne, index) => (
@@ -314,7 +303,6 @@ const Commandes = () => {
                     marginBottom: '10px', background: 'rgba(255,255,255,0.03)',
                     padding: '10px', borderRadius: 8,
                   }}>
-                    {/* Select produit */}
                     <select value={ligne.produitId}
                       onChange={(e) => updateLigne(index, 'produitId', e.target.value)}
                       style={{ ...inputStyle, flex: 2 }} required>
@@ -326,14 +314,12 @@ const Commandes = () => {
                       ))}
                     </select>
 
-                    {/* Quantité */}
                     <input type="number" min="0.1" step="0.1"
                       value={ligne.quantiteKg} required
                       onChange={(e) => updateLigne(index, 'quantiteKg', e.target.value)}
                       placeholder="kg"
                       style={{ ...inputStyle, flex: 1 }} />
 
-                    {/* Supprimer ligne */}
                     {formData.lignes.length > 1 && (
                       <button type="button" onClick={() => removeLigne(index)} style={{
                         padding: '8px 12px', background: '#f44336', color: 'white',
@@ -343,7 +329,6 @@ const Commandes = () => {
                   </div>
                 ))}
 
-                {/* Total estimé */}
                 <div style={{
                   background: 'rgba(212, 165, 116, 0.1)', borderRadius: 8,
                   padding: '12px', marginTop: '10px',
@@ -370,7 +355,7 @@ const Commandes = () => {
           </div>
         </div>
       )}
-    </div>
+    </Layout>
   );
 };
 

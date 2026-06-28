@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { getAllControles, createControle, updateControle, deleteControle } from '../../services/controleQualiteService';
-import Sidebar from '../Common/Navbar';
+import lotService from '../../services/lotService'; // ✅ Import du service par défaut
+import Layout from '../Common/Layout';
 
 const ControleQualite = () => {
   const { user } = useAuth();
   const [controles, setControles] = useState([]);
+  const [lots, setLots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -24,18 +26,22 @@ const ControleQualite = () => {
   });
 
   useEffect(() => {
-    fetchControles();
+    fetchData();
   }, []);
 
-  const fetchControles = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
-      const data = await getAllControles();
-      setControles(data);
+      const [controlesData, lotsData] = await Promise.all([
+        getAllControles(),
+        lotService.getAllLots(), // ✅ Utilise lotService.getAllLots()
+      ]);
+      setControles(controlesData);
+      setLots(lotsData);
       setError(null);
     } catch (err) {
-      console.error('Error fetching controles:', err);
-      setError('Impossible de charger les contrôles');
+      console.error('Error fetching data:', err);
+      setError('Impossible de charger les données');
     } finally {
       setLoading(false);
     }
@@ -68,54 +74,91 @@ const ControleQualite = () => {
     setShowModal(true);
   };
 
-  const handleEdit = (controle) => {
-    setEditingControle(controle);
-    setFormData({
-      lotId: controle.lot?.id || '',
-      dateControle: controle.dateControle ? controle.dateControle.split('T')[0] : '',
-      humidite: controle.humidite,
-      densite: controle.densite,
-      pourcentageDefauts: controle.pourcentageDefauts,
-      couleur: controle.couleur,
-      noteDegustation: controle.noteDegustation,
-      conforme: controle.conforme,
-      observations: controle.observations,
-    });
-    setShowModal(true);
-  };
+ const handleEdit = (controle) => {
+  setEditingControle(controle);
+
+  setFormData({
+    lotId: controle.lot?.id || "",
+
+    dateControle: controle.dateControle
+      ? controle.dateControle.split("T")[0]
+      : "",
+
+    humidite: controle.humidite || "",
+    densite: controle.densite || "",
+    pourcentageDefauts: controle.pourcentageDefauts || "",
+    couleur: controle.couleur || 5,
+    noteDegustation: controle.noteDegustation || "",
+    conforme: controle.conforme,
+    observations: controle.observations || "",
+  });
+
+  setShowModal(true);
+};
 
   const handleDelete = async (id) => {
     if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce contrôle ?')) return;
     
     try {
       await deleteControle(id);
-      fetchControles();
+      fetchData();
     } catch (err) {
       console.error('Error deleting controle:', err);
       alert('Erreur lors de la suppression du contrôle');
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    try {
-      const payload = {
-        ...formData,
-        lot: { id: formData.lotId },
-      };
-      
-      if (editingControle) {
-        await updateControle(editingControle.id, payload);
-      } else {
-        await createControle(payload);
-      }
-      setShowModal(false);
-      fetchControles();
-    } catch (err) {
-      console.error('Error saving controle:', err);
-      alert('Erreur lors de la sauvegarde du contrôle');
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  const dataToSend = {
+    // ✅ IMPORTANT: entity format (PAS lotId)
+    lot: {
+      id: Number(formData.lotId),
+    },
+
+    // ✅ LocalDateTime compatible Spring Boot
+    // input type="date" => "YYYY-MM-DD" (conversion locale pour éviter le décalage timezone)
+    dateControle: (() => {
+      const [y, m, d] = formData.dateControle.split('-');
+      const localDate = new Date(`${y}-${m}-${d}T00:00:00`);
+      return localDate.toISOString();
+    })(),
+
+
+    humidite: parseFloat(formData.humidite),
+    densite: parseFloat(formData.densite),
+    pourcentageDefauts: parseInt(formData.pourcentageDefauts),
+    couleur: parseInt(formData.couleur),
+
+    noteDegustation: formData.noteDegustation || "",
+    observations: formData.observations || "",
+
+    conforme: formData.conforme === true || formData.conforme === "true",
+  };
+
+  try {
+    if (editingControle) {
+      await updateControle(editingControle.id, dataToSend);
+      alert("Modifié avec succès");
+    } else {
+      await createControle(dataToSend);
+      alert("Créé avec succès");
     }
+
+    setShowModal(false);
+    fetchData();
+
+  } catch (err) {
+    console.log("ERROR:", err.response?.data);
+    alert("Erreur backend");
+  }
+};
+
+  // ✅ Récupérer le nom du lot par son ID
+  const getLotNumber = (lotId) => {
+    const lot = lots.find(l => l.id === lotId);
+    return lot ? `Lot ${lot.numeroLot}` : `Lot #${lotId}`;
   };
 
   if (loading) {
@@ -135,21 +178,8 @@ const ControleQualite = () => {
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #1a1410 0%, #2a2218 100%)',
-      display: 'flex',
-    }}>
-      <Sidebar />
-      <div style={{
-        flex: 1,
-        padding: '40px',
-        overflow: 'auto',
-      }}>
-        <div style={{
-          maxWidth: 1400,
-          margin: '0 auto',
-        }}>
+  <Layout>
+    <div style={{ maxWidth: 1400, margin: '0 auto' }}>
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
@@ -176,7 +206,10 @@ const ControleQualite = () => {
                   fontSize: 14,
                   fontWeight: 600,
                   cursor: 'pointer',
+                  transition: 'all 0.3s ease',
                 }}
+                onMouseEnter={(e) => e.target.style.background = '#c99555'}
+                onMouseLeave={(e) => e.target.style.background = '#d4a574'}
               >
                 + Nouveau Contrôle
               </button>
@@ -286,7 +319,7 @@ const ControleQualite = () => {
                       color: '#b0b0b0',
                       padding: '12px',
                       borderBottom: '1px solid rgba(212, 165, 116, 0.1)',
-                    }}>{controle.lot?.numeroLot || '-'}</td>
+                    }}>{getLotNumber(controle.lot?.id)}</td>
                     <td style={{
                       color: '#b0b0b0',
                       padding: '12px',
@@ -338,7 +371,10 @@ const ControleQualite = () => {
                             fontSize: 12,
                             cursor: 'pointer',
                             marginRight: '8px',
+                            transition: 'all 0.3s ease',
                           }}
+                          onMouseEnter={(e) => e.target.style.background = '#1976D2'}
+                          onMouseLeave={(e) => e.target.style.background = '#2196F3'}
                         >
                           Modifier
                         </button>
@@ -353,7 +389,10 @@ const ControleQualite = () => {
                               borderRadius: 4,
                               fontSize: 12,
                               cursor: 'pointer',
+                              transition: 'all 0.3s ease',
                             }}
+                            onMouseEnter={(e) => e.target.style.background = '#da190b'}
+                            onMouseLeave={(e) => e.target.style.background = '#f44336'}
                           >
                             Supprimer
                           </button>
@@ -376,7 +415,6 @@ const ControleQualite = () => {
             )}
           </div>
         </div>
-      </div>
 
       {showModal && (
         <div style={{
@@ -408,12 +446,12 @@ const ControleQualite = () => {
               {editingControle ? 'Modifier Contrôle' : 'Nouveau Contrôle'}
             </h2>
             <form onSubmit={handleSubmit}>
+              {/* ✅ DROPDOWN LOT au lieu d'input numérique */}
               <div style={{ marginBottom: '15px' }}>
-                <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px' }}>
-                  ID Lot
+                <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px', fontWeight: 600 }}>
+                  Lot *
                 </label>
-                <input
-                  type="number"
+                <select
                   value={formData.lotId}
                   onChange={(e) => setFormData({...formData, lotId: e.target.value})}
                   required
@@ -424,12 +462,23 @@ const ControleQualite = () => {
                     color: '#d4a574',
                     border: '1px solid #d4a574',
                     borderRadius: 6,
+                    fontSize: 14,
+                    cursor: 'pointer',
                   }}
-                />
+                >
+                  <option value="">-- Sélectionner un lot --</option>
+                  {lots.map((lot) => (
+                    <option key={lot.id} value={lot.id}>
+                      Lot {lot.numeroLot}
+                    </option>
+                  ))}
+                </select>
               </div>
+
+              {/* Date Contrôle */}
               <div style={{ marginBottom: '15px' }}>
-                <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px' }}>
-                  Date Contrôle
+                <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px', fontWeight: 600 }}>
+                  Date Contrôle *
                 </label>
                 <input
                   type="date"
@@ -443,20 +492,24 @@ const ControleQualite = () => {
                     color: '#d4a574',
                     border: '1px solid #d4a574',
                     borderRadius: 6,
+                    fontSize: 14,
                   }}
                 />
               </div>
+
+              {/* Humidité et Densité */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
                 <div>
-                  <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px' }}>
-                    Humidité %
+                  <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px', fontWeight: 600 }}>
+                    Humidité % *
                   </label>
                   <input
                     type="number"
-                    step="0.1"
+                    step="0.01"
                     value={formData.humidite}
                     onChange={(e) => setFormData({...formData, humidite: e.target.value})}
                     required
+                    placeholder="0.00"
                     style={{
                       width: '100%',
                       padding: '10px',
@@ -464,19 +517,21 @@ const ControleQualite = () => {
                       color: '#d4a574',
                       border: '1px solid #d4a574',
                       borderRadius: 6,
+                      fontSize: 14,
                     }}
                   />
                 </div>
                 <div>
-                  <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px' }}>
-                    Densité (g/L)
+                  <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px', fontWeight: 600 }}>
+                    Densité (g/L) *
                   </label>
                   <input
                     type="number"
-                    step="0.1"
+                    step="0.01"
                     value={formData.densite}
                     onChange={(e) => setFormData({...formData, densite: e.target.value})}
                     required
+                    placeholder="0.00"
                     style={{
                       width: '100%',
                       padding: '10px',
@@ -484,20 +539,26 @@ const ControleQualite = () => {
                       color: '#d4a574',
                       border: '1px solid #d4a574',
                       borderRadius: 6,
+                      fontSize: 14,
                     }}
                   />
                 </div>
               </div>
+
+              {/* Défauts et Couleur */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
                 <div>
-                  <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px' }}>
-                    Défauts %
+                  <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px', fontWeight: 600 }}>
+                    Défauts % *
                   </label>
                   <input
                     type="number"
+                    min="0"
+                    max="100"
                     value={formData.pourcentageDefauts}
                     onChange={(e) => setFormData({...formData, pourcentageDefauts: e.target.value})}
                     required
+                    placeholder="0"
                     style={{
                       width: '100%',
                       padding: '10px',
@@ -505,19 +566,20 @@ const ControleQualite = () => {
                       color: '#d4a574',
                       border: '1px solid #d4a574',
                       borderRadius: 6,
+                      fontSize: 14,
                     }}
                   />
                 </div>
                 <div>
-                  <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px' }}>
-                    Couleur (1-10)
+                  <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px', fontWeight: 600 }}>
+                    Couleur (1-10) *
                   </label>
                   <input
                     type="number"
                     min="1"
                     max="10"
                     value={formData.couleur}
-                    onChange={(e) => setFormData({...formData, couleur: parseInt(e.target.value)})}
+                    onChange={(e) => setFormData({...formData, couleur: parseInt(e.target.value) || 5})}
                     required
                     style={{
                       width: '100%',
@@ -526,18 +588,22 @@ const ControleQualite = () => {
                       color: '#d4a574',
                       border: '1px solid #d4a574',
                       borderRadius: 6,
+                      fontSize: 14,
                     }}
                   />
                 </div>
               </div>
+
+              {/* Notes de Dégustation */}
               <div style={{ marginBottom: '15px' }}>
-                <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px' }}>
+                <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px', fontWeight: 600 }}>
                   Notes de Dégustation
                 </label>
                 <textarea
                   value={formData.noteDegustation}
                   onChange={(e) => setFormData({...formData, noteDegustation: e.target.value})}
                   rows={3}
+                  placeholder="Décrivez les caractéristiques gustatives..."
                   style={{
                     width: '100%',
                     padding: '10px',
@@ -545,17 +611,23 @@ const ControleQualite = () => {
                     color: '#d4a574',
                     border: '1px solid #d4a574',
                     borderRadius: 6,
+                    fontSize: 14,
+                    fontFamily: 'inherit',
+                    resize: 'vertical',
                   }}
                 />
               </div>
+
+              {/* Observations */}
               <div style={{ marginBottom: '15px' }}>
-                <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px' }}>
+                <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px', fontWeight: 600 }}>
                   Observations
                 </label>
                 <textarea
                   value={formData.observations}
                   onChange={(e) => setFormData({...formData, observations: e.target.value})}
                   rows={2}
+                  placeholder="Observations supplémentaires..."
                   style={{
                     width: '100%',
                     padding: '10px',
@@ -563,12 +635,17 @@ const ControleQualite = () => {
                     color: '#d4a574',
                     border: '1px solid #d4a574',
                     borderRadius: 6,
+                    fontSize: 14,
+                    fontFamily: 'inherit',
+                    resize: 'vertical',
                   }}
                 />
               </div>
+
+              {/* Conforme */}
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px' }}>
-                  Conforme aux normes
+                <label style={{ color: '#d4a574', display: 'block', marginBottom: '5px', fontWeight: 600 }}>
+                  Conforme aux normes *
                 </label>
                 <select
                   value={formData.conforme}
@@ -580,12 +657,15 @@ const ControleQualite = () => {
                     color: '#d4a574',
                     border: '1px solid #d4a574',
                     borderRadius: 6,
+                    fontSize: 14,
                   }}
                 >
-                  <option value="true">Oui</option>
-                  <option value="false">Non</option>
+                  <option value="true">Oui ✓</option>
+                  <option value="false">Non ✗</option>
                 </select>
               </div>
+
+              {/* Boutons */}
               <div style={{
                 display: 'flex',
                 gap: '20px',
@@ -601,6 +681,14 @@ const ControleQualite = () => {
                     border: '1px solid #d4a574',
                     borderRadius: 6,
                     cursor: 'pointer',
+                    fontWeight: 600,
+                    transition: 'all 0.3s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.background = 'rgba(212, 165, 116, 0.1)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = 'transparent';
                   }}
                 >
                   Annuler
@@ -615,7 +703,10 @@ const ControleQualite = () => {
                     borderRadius: 6,
                     cursor: 'pointer',
                     fontWeight: 600,
+                    transition: 'all 0.3s ease',
                   }}
+                  onMouseEnter={(e) => e.target.style.background = '#c99555'}
+                  onMouseLeave={(e) => e.target.style.background = '#d4a574'}
                 >
                   {editingControle ? 'Modifier' : 'Créer'}
                 </button>
@@ -624,7 +715,7 @@ const ControleQualite = () => {
           </div>
         </div>
       )}
-    </div>
+  </Layout>
   );
 };
 

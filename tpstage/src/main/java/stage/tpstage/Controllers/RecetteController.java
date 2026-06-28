@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import stage.tpstage.Services.RecetteService;
+import stage.tpstage.dto.RecetteDTO;
 import stage.tpstage.entity.LigneRecette;
 import stage.tpstage.entity.Recette;
 
@@ -18,19 +19,20 @@ public class RecetteController {
     @Autowired
     private RecetteService recetteService;
 
+    // ✅ retourne des DTOs au lieu des entités → plus de boucle JSON
     @GetMapping
-    public ResponseEntity<List<Recette>> getAllRecettes() {
-        return ResponseEntity.ok(recetteService.getAllRecettes());
+    public ResponseEntity<List<RecetteDTO>> getAllRecettes() {
+        return ResponseEntity.ok(recetteService.getAllRecettesDTO());
     }
 
     @GetMapping("/actives")
-    public ResponseEntity<List<Recette>> getRecettesActives() {
-        return ResponseEntity.ok(recetteService.getRecettesActives());
+    public ResponseEntity<List<RecetteDTO>> getRecettesActives() {
+        return ResponseEntity.ok(recetteService.getRecettesActivesDTO());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Recette> getRecetteById(@PathVariable Long id) {
-        return ResponseEntity.ok(recetteService.getRecetteById(id));
+    public ResponseEntity<RecetteDTO> getRecetteById(@PathVariable Long id) {
+        return ResponseEntity.ok(recetteService.getRecetteDTOById(id));
     }
 
     @GetMapping("/{id}/lignes")
@@ -40,14 +42,14 @@ public class RecetteController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'PRODUCTION_MANAGER')")
-    public ResponseEntity<Recette> createRecette(@RequestBody Recette recette) {
-        return ResponseEntity.ok(recetteService.createRecette(recette));
+    public ResponseEntity<RecetteDTO> createRecette(@RequestBody RecetteDTO dto) {
+        return ResponseEntity.ok(recetteService.createRecetteFromDTO(dto));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'PRODUCTION_MANAGER')")
-    public ResponseEntity<Recette> updateRecette(@PathVariable Long id, @RequestBody Recette recette) {
-        return ResponseEntity.ok(recetteService.updateRecette(id, recette));
+    public ResponseEntity<RecetteDTO> updateRecette(@PathVariable Long id, @RequestBody RecetteDTO dto) {
+        return ResponseEntity.ok(recetteService.updateRecetteFromDTO(id, dto));
     }
 
     @DeleteMapping("/{id}")
@@ -59,8 +61,10 @@ public class RecetteController {
 
     @PostMapping("/{id}/lignes")
     @PreAuthorize("hasAnyRole('ADMIN', 'PRODUCTION_MANAGER')")
-    public ResponseEntity<LigneRecette> addLigneRecette(@PathVariable Long id, @RequestBody LigneRecette ligne) {
-        return ResponseEntity.ok(recetteService.addLigneRecette(ligne));
+    public ResponseEntity<LigneRecette> addLigneRecette(
+            @PathVariable Long id,
+            @RequestBody LigneRecette ligne) {
+        return ResponseEntity.ok(recetteService.addLigneRecette(id, ligne));
     }
 
     @DeleteMapping("/lignes/{ligneId}")

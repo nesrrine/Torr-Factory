@@ -112,7 +112,7 @@ const Dashboard = () => {
             <h1 style={{
               fontSize: 32,
               fontWeight: 700,
-              color: '#f5f5f5',
+              color: '#d4a574',
               margin: 0,
             }}>
               Tableau de bord

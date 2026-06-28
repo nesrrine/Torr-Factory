@@ -150,7 +150,7 @@ const Lots = () => {
           {/* Header */}
           <div style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <h1 style={{ fontSize: 32, fontWeight: 700, color: '#f5f5f5', margin: 0 }}>
+              <h1 style={{ fontSize: 32, fontWeight: 700, color: '#d4a574', margin: 0 }}>
                 Lots de Café
               </h1>
               <p style={{ fontSize: 14, color: '#b0b0b0', margin: '8px 0 0 0' }}>
@@ -186,7 +186,7 @@ const Lots = () => {
                 background: '#2a2218',
                 border: '1px solid #3a3228',
                 borderRadius: 8,
-                color: '#f5f5f5',
+                color: '#d4a574',
                 fontSize: 14,
                 cursor: 'pointer',
               }}
